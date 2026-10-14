@@ -1,0 +1,10 @@
+# Ambientes virtuales
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Temporales
+*.tmp

@@ -1,0 +1,27 @@
+# ---------------------------------------------------------------------------
+# Dependencias del proyecto json2csv (puntos f y s).
+#
+# El conversor en sí utiliza ÚNICAMENTE la biblioteca estándar de Python;
+# las librerías listadas aquí son las herramientas de apoyo (andamiaje y
+# documentación). Se instalan dentro del ambiente virtual con:
+#
+#     pip install -r REQUIREMENTS.TXT
+# ---------------------------------------------------------------------------
+
+# Andamiaje: genera el esqueleto del proyecto (punto b).
+cookiecutter>=2.6,<3
+
+# Documentación automática de la API con pdoc (punto g).
+pdoc>=14.0,<17
+
+# ---------------------------------------------------------------------------
+# Dependencias previstas para las etapas siguientes del TP (puntos i-u).
+# Se irán activando a medida que se implementen esos controles.
+# ---------------------------------------------------------------------------
+# pytest>=8                # Pruebas unitarias (punto o)
+# pytest-cov>=5            # Cobertura de pruebas (punto o)
+# ruff>=0.6                # Reglas de formato / lint (puntos i y l)
+# black>=24                # Formato consistente (punto j)
+# mypy>=1.10               # Verificación estática de tipos (punto m)
+# pyright>=1.1             # Verificación estática de tipos (punto n)
+# bandit>=1.7              # Análisis básico de seguridad (punto p)
