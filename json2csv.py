@@ -68,6 +68,7 @@ class Json2CsvError(Exception):
     """Error base de la herramienta."""
 
     def __init__(self, message: str, *, hint: str | None = None) -> None:
+        """Guarda el mensaje principal y una sugerencia opcional."""
         super().__init__(message)
         self.message = message
         self.hint = hint
@@ -111,18 +112,14 @@ def source_filter(path: str | None) -> Iterator[str]:
             wrapper.detach()
         return
 
-    try:
-        if os.path.isdir(path):
-            raise InputError(f"la ruta de entrada '{path}' es un directorio")
-        handle = open(path, "r", encoding="utf-8-sig", newline=None)
-    except InputError:
-        raise
-    except OSError as exc:
-        raise InputError(_describir_error("abrir para lectura", path, exc)) from None
+    if os.path.isdir(path):
+        raise InputError(f"la ruta de entrada '{path}' es un directorio")
 
     try:
-        with handle:
+        with open(path, encoding="utf-8-sig", newline=None) as handle:
             yield from handle
+    except OSError as exc:
+        raise InputError(_describir_error("leer", path, exc)) from None
     except UnicodeDecodeError as exc:
         raise InputError(
             f"el documento de entrada '{path}' no se pudo decodificar con UTF-8",
@@ -241,23 +238,17 @@ def output_filter(chunks: Iterable[str], path: str | None) -> int:
         sys.stdout.flush()
         return written
 
-    try:
-        if os.path.isdir(path):
-            raise OutputError(f"la ruta de salida '{path}' es un directorio")
-        handle = open(path, "w", encoding="utf-8", newline="")
-    except OutputError:
-        raise
-    except OSError as exc:
-        raise OutputError(_describir_error("abrir para escritura", path, exc)) from None
+    if os.path.isdir(path):
+        raise OutputError(f"la ruta de salida '{path}' es un directorio")
 
     try:
-        with handle:
+        with open(path, "w", encoding="utf-8", newline="") as handle:
             for chunk in chunks:
                 handle.write(chunk)
                 written += len(chunk)
             handle.flush()
     except OSError as exc:
-        raise OutputError(_describir_error("escribir", path, exc)) from None
+        raise OutputError(_describir_error("escribir en", path, exc)) from None
     return written
 
 
@@ -273,14 +264,14 @@ def convert(input_path: str | None, output_path: str | None, delimiter: str) -> 
         Si las opciones no son válidas o la conversión falla.
     """
     _validar(input_path, output_path, delimiter)
-    lines = source_filter(input_path)
-    document = parse_filter(lines)
-    records = records_filter(document)
-    rows = scalarize_filter(records)
-    columns, rows = fields_filter(rows)
-    chunks = render_filter(columns, rows, delimiter)
-    output_filter(chunks, output_path)
-    return len(rows)
+    lineas = source_filter(input_path)
+    documento = parse_filter(lineas)
+    registros = records_filter(documento)
+    valores = scalarize_filter(registros)
+    columnas, filas = fields_filter(valores)
+    fragmentos = render_filter(columnas, filas, delimiter)
+    output_filter(fragmentos, output_path)
+    return len(filas)
 
 
 # ---------------------------------------------------------------------------
@@ -290,7 +281,8 @@ def _validar(input_path: str | None, output_path: str | None, delimiter: str) ->
     """Revisa las opciones antes de ejecutar la cadena de filtros."""
     if len(delimiter) != 1:
         raise ConfigurationError(
-            "el delimitador debe ser un único carácter", hint=f"se recibió {delimiter!r}"
+            "el delimitador debe ser un único carácter",
+            hint=f"se recibió {delimiter!r}",
         )
     if delimiter in {'"', "\r", "\n"}:
         raise ConfigurationError(
@@ -326,10 +318,12 @@ def _a_texto(value: Any) -> str:
 
 def _ajustar_stdout() -> None:
     """Fija UTF-8 y evita que Windows duplique el salto de línea del CSV."""
-    try:
-        sys.stdout.reconfigure(encoding="utf-8", newline="")
-    except (AttributeError, LookupError, OSError, ValueError):
-        pass  # el flujo no admite reconfiguración (p. ej. en pruebas)
+    stream = sys.stdout
+    if isinstance(stream, io.TextIOWrapper):
+        try:
+            stream.reconfigure(encoding="utf-8", newline="")
+        except (LookupError, OSError, ValueError):
+            pass  # el flujo no admite la reconfiguración pedida
 
 
 def _describir_error(action: str, path: str, exc: OSError) -> str:
@@ -342,7 +336,9 @@ def _describir_error(action: str, path: str, exc: OSError) -> str:
         errno.ENOSPC: "no hay espacio suficiente en el dispositivo",
         errno.EROFS: "el sistema de archivos es de solo lectura",
     }
-    reason = reasons.get(exc.errno, exc.strerror or str(exc))
+    reason = exc.strerror or str(exc)
+    if exc.errno is not None:
+        reason = reasons.get(exc.errno, reason)
     return f"no se pudo {action} '{path}': {reason}"
 
 
@@ -356,7 +352,9 @@ def _delimitador(text: str) -> str:
             f"el delimitador debe ser un único carácter, se recibieron {len(text)}"
         )
     if text in "\r\n":
-        raise argparse.ArgumentTypeError("el delimitador no puede ser un salto de línea")
+        raise argparse.ArgumentTypeError(
+            "el delimitador no puede ser un salto de línea"
+        )
     if text == '"':
         raise argparse.ArgumentTypeError("el delimitador no puede ser la comilla doble")
     return text
@@ -377,19 +375,30 @@ def _construir_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "-i", "--input", metavar="ARCHIVO", default=None,
+        "-i",
+        "--input",
+        metavar="ARCHIVO",
+        default=None,
         help="archivo JSON de entrada; si se omite, se lee de la entrada estándar",
     )
     parser.add_argument(
-        "-o", "--output", metavar="ARCHIVO", default=None,
+        "-o",
+        "--output",
+        metavar="ARCHIVO",
+        default=None,
         help="archivo CSV de salida; si se omite, se escribe en la salida estándar",
     )
     parser.add_argument(
-        "-d", "--delimiter", metavar="SEP", type=_delimitador, default=",",
+        "-d",
+        "--delimiter",
+        metavar="SEP",
+        type=_delimitador,
+        default=",",
         help="delimitador de columnas del CSV (por omisión: la coma)",
     )
     parser.add_argument(
-        "--version", action="version",
+        "--version",
+        action="version",
         version=f"json2csv {VERSION} (build {BUILD})",
         help="muestra la versión y el build, y termina",
     )
@@ -413,8 +422,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
         except OSError:
             pass
-        print("aviso: la salida fue cerrada antes de completar la conversión",
-              file=sys.stderr)
+        print(
+            "aviso: la salida fue cerrada antes de completar la conversión",
+            file=sys.stderr,
+        )
         return 0
     except KeyboardInterrupt:
         print("operación interrumpida por el usuario", file=sys.stderr)
@@ -424,7 +435,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 1
 
     if args.output is not None:
-        print(f"listo: {registros} registro(s) escritos en '{args.output}'", file=sys.stderr)
+        print(
+            f"listo: {registros} registro(s) escritos en '{args.output}'",
+            file=sys.stderr,
+        )
     return 0
 
 

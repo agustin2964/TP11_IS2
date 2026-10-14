@@ -11,8 +11,7 @@ la consigna del Trabajo Práctico N.º 11.
 - **Fecha**: 14 de octubre de 2026.
 - **Repositorio**: `C:\Users\Agustin\vc code trabajos\3er año\is2\TP11_IS2`
   (remoto: https://github.com/agustin2964/TP11_IS2).
-- **Alcance**: programa principal y puntos (a) a (h). Los puntos (i) a (u)
-  quedan pendientes (ver `CHANGELOG.md`).
+- **Alcance**: programa principal y puntos (a) a (u) de la consigna.
 
 ## Prompts registrados
 
@@ -33,6 +32,12 @@ la consigna del Trabajo Práctico N.º 11.
    meterle más tecnología que la que pide, así que lo mejor es hacerlo simple".
    Como resultado se redujo la entrega a un único archivo de programa más los
    archivos que pide la consigna.
+6. **Pedido de continuar con los puntos restantes**: "segui con el resto de los
+   puntos, verifica sobre lo que ya hiciste y dejame un resumen de lo que se
+   trate de pruebas para hacer y documentar por mi cuenta". Se implementaron
+   los puntos (i) a (u): pruebas unitarias con Pytest y cobertura, ruff, black,
+   pydocstyle (PEP257), MyPy, PyRight, bandit, workflow de CI/CD en GitHub
+   Actions y actualización de la documentación por PR exitoso.
 
 ## Decisiones propias (no pedidas explícitamente)
 
@@ -42,24 +47,38 @@ la consigna del Trabajo Práctico N.º 11.
   dentro de un único archivo.
 - **Reglas de conversión** que la consigna no especificaba: `null` → celda
   vacía; booleanos → `true`/`false`; los números conservan la representación
-  del documento original; objetos y arreglos anidados → JSON compacto; las
-  columnas son la unión de las claves en orden de primera aparición; fin de
-  línea `\r\n` (RFC 4180) y entrecomillado mínimo.
+  del documento original (se analizan con `Decimal`); objetos y arreglos
+  anidados → JSON compacto; las columnas son la unión de las claves en orden
+  de primera aparición; fin de línea `\r\n` (RFC 4180) y entrecomillado mínimo.
 - **Códigos de salida** formalizados: 0 (correcto), 1 (error), 2 (error de uso
   de la línea de comandos), 130 (Ctrl+C).
-- **Estructura mínima**: un solo archivo `json2csv.py` más los archivos que
-  pide la consigna (README, CHANGELOG, CONTEXT, REQUIREMENTS.TXT, LICENSE,
-  VERSION, BUILD). La plantilla de Cookiectter y la documentación generada con
-  pdoc se mantienen **fuera** del repositorio para no engordar la entrega.
+- **Estructura**: un solo archivo `json2csv.py` más los archivos que pide la
+  consigna. La plantilla de CookieCutter y la documentación generada con pdoc
+  se mantienen fuera del repositorio salvo `docs/api/`, que sí se publica.
 - **Se descartó** la opción `-e/--encoding` que se había agregado en una
   primera versión: el programa trabaja siempre con UTF-8 (aceptando BOM).
+- **Archivo de dependencias**: se usa `requirements.txt` (minúsculas, punto s).
+  El nombre `REQUIREMENTS.TXT` del punto (f) no puede convivir con él en
+  sistema operativos Windows (el sistema de archivos no distingue mayúsculas),
+  por lo que se documenta que se trata del mismo archivo.
+- **bandit** se configura para analizar el programa y excluir los tests (los
+  `assert` de las pruebas no son observaciones de seguridad). Según el punto
+  (q) no se usa Trufflehog.
 
 ## Verificación
 
-Se ejecutó una suite de 33 pruebas de humo por subproceso dentro del ambiente
-virtual (casos válidos, delimitadores, entrada y salida estándar, documento con
-BOM, y 12 condiciones de error controladas). Todas las pruebas finalizaron en
-verde.
+Ejecutado dentro del ambiente virtual (`.\.venv\Scripts\python.exe`):
+
+- `pytest --cov=json2csv --cov-report=term-missing` → **64 pruebas en verde,
+  cobertura 98 %** (mínimo exigido: 85 %).
+- `black --check json2csv.py tests` → sin cambios pendientes.
+- `ruff check json2csv.py tests` → sin errores (E/F/W, D, I, N, UP).
+- `pydocstyle json2csv.py tests` → sin errores (PEP 257).
+- `mypy` → sin errores.
+- `pyright` → 0 errores, 0 advertencias.
+- `bandit -q -c pyproject.toml -r .` → sin observaciones.
+- Suite de 29 pruebas de humo por subproceso (casos válidos y de error de la
+  CLI real) ejecutada previamente sobre la versión simplificada: todas verdes.
 
 ## Nota de transparencia
 

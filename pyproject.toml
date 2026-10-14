@@ -1,0 +1,58 @@
+# Configuración de las herramientas del proyecto (puntos i-u del TP).
+# El programa en sí no necesita instalación: se ejecuta con
+#     python json2csv.py ...
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+# i) ruff valida reglas de formato sin dejar errores:
+#    E/W  = PEP8 (punto k)   F = errores de código
+#    D    = PEP257 (punto l) I = orden de imports   N = nombres   UP = sintaxis moderna
+[tool.ruff.lint]
+select = ["E", "F", "W", "D", "I", "N", "UP"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"
+
+# j) black: formato consistente
+[tool.black]
+line-length = 88
+target-version = ["py310"]
+
+# m) MyPy sobre los módulos dentro de alcance
+[tool.mypy]
+python_version = "3.10"
+files = ["json2csv.py", "tests"]
+disallow_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+strict_equality = true
+
+# n) PyRight sobre los módulos dentro de alcance
+[tool.pyright]
+include = ["json2csv.py", "tests"]
+pythonVersion = "3.10"
+typeCheckingMode = "standard"
+venvPath = "."
+venv = ".venv"
+
+# p) bandit: evaluación básica de seguridad.
+# El análisis se hace sobre el programa; los tests usan assert a propósito.
+[tool.bandit]
+exclude_dirs = [".venv", "tests", "docs", "__pycache__", "*.egg-info"]
+assert_used = false
+
+# o) Pytest y cobertura >= 85 %
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.coverage.run]
+source = ["json2csv"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true

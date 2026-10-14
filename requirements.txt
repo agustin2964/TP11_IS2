@@ -1,0 +1,39 @@
+# ---------------------------------------------------------------------------
+# Dependencias del proyecto json2csv (puntos f y s de la consigna).
+#
+#   pip install -r requirements.txt
+#
+# El programa (json2csv.py) usa UNICAMENTE la biblioteca estandar de Python
+# 3.10 o superior. Las librerias de abajo son las herramientas de apoyo y de
+# control de calidad que piden los puntos (i) a (u).
+# ---------------------------------------------------------------------------
+
+# Documentacion automatica de la API (puntos g y u)
+pdoc>=14.0,<17
+
+# Pruebas unitarias y cobertura (punto o)
+pytest>=8
+pytest-cov>=5
+coverage>=7
+
+# Reglas de formato y lint (puntos i, j y k)
+ruff>=0.6
+black>=24
+
+# Convenciones PEP257 para los docstrings (punto l)
+pydocstyle>=6
+
+# Verificacion estatica de tipos (puntos m y n)
+mypy>=1.10
+pyright>=1.1
+
+# Analisis basico de seguridad (punto p)
+bandit>=1.7
+
+# ---------------------------------------------------------------------------
+# Notas:
+# - El andamiaje con Cookiectter (punto b) ya fue ejecutado; la herramienta
+#   no es una dependencia del proyecto (puede instalarse aparte si se quiere
+#   regenerar el esqueleto): pip install cookiecutter
+# - Segun el punto (q) NO se utiliza Trufflehog en los controles de seguridad.
+# ---------------------------------------------------------------------------

@@ -1,0 +1,95 @@
+name: CI
+
+# CI/CD completo (puntos t y u de la consigna): control de calidad en cada
+# push y pull request, y actualizacion de la documentacion con pdoc cuando
+# el pipeline termina en verde.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  calidad:
+    name: Control de calidad
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # j) black: formato consistente
+      - name: black
+        run: black --check json2csv.py tests
+
+      # i) ruff: reglas de formato (incluye PEP8, punto k)
+      - name: ruff
+        run: ruff check json2csv.py tests
+
+      # l) PEP257: convenciones de docstrings
+      - name: pydocstyle
+        run: pydocstyle json2csv.py tests
+
+      # m) MyPy: verificacion estatica de tipos
+      - name: mypy
+        run: mypy
+
+      # n) PyRight: verificacion estatica de tipos
+      - name: pyright
+        run: pyright json2csv.py tests
+
+      # o) Pytest con cobertura minima del 85 %
+      - name: pytest
+        run: pytest --cov=json2csv --cov-report=term-missing --cov-fail-under=85
+
+      # p) bandit: evaluacion basica de seguridad
+      - name: bandit
+        run: bandit -q -c pyproject.toml -r .
+
+  documentacion:
+    name: Documentacion (pdoc)
+    needs: calidad
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # u) generar/actualizar la documentacion con cada PR exitoso
+      - name: Generar documentacion con pdoc
+        run: |
+          mkdir -p docs/api
+          python -m pdoc -o docs/api json2csv.py
+
+      - name: Publicar la documentacion como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentacion
+          path: docs/api
+
+      # u) sobre la rama main, la documentacion se commitea en el repositorio
+      - name: Actualizar docs en la rama
+        if: github.event_name == 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/api
+          if ! git diff --staged --quiet; then
+            git commit -m "docs: actualizar documentacion (CI)"
+            git push
+          fi
